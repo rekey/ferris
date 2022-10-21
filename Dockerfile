@@ -7,7 +7,7 @@ COPY --from=teddysun/xray /usr/bin/xray /usr/bin/xray
 COPY --from=teddysun/xray /usr/share/xray /usr/share/xray
 ADD ./src /app/
 
-RUN sed -i "s/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g" /etc/apk/repositories && \
+RUN sed -i "s@http://dl-cdn.alpinelinux.org/@https://repo.huaweicloud.com/@g" /etc/apk/repositories && \
     apk update && \
     apk add nodejs npm curl && \
     xray help && \

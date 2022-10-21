@@ -26,7 +26,7 @@ router.get('/api/outbound/list', async (ctx) => {
 
 router.get('/api/outbound/test', async (ctx) => {
     appSvc.trigger();
-    ctx.body = {};
+    ctx.body = await xraySvc.getOutbounds();
 });
 
 app.use(router.routes());
