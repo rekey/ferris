@@ -108,3 +108,5 @@ package-lock.json
 src/store
 src/config
 src/log
+
+test.js
