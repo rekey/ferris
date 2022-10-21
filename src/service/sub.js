@@ -83,9 +83,14 @@ function getAllOutbounds() {
     return outbounds;
 }
 
+function getAllUrls() {
+    return store.get(subUrlKey) || [];
+}
+
 module.exports = {
     addUrl,
     delUrl,
     subAll,
+    getAllUrls,
     getAllOutbounds,
 };

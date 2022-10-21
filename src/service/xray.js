@@ -115,6 +115,7 @@ async function test(originOutbounds) {
             cache.test.running = false;
             cache.test.now = Date.now();
             xray.stop();
+            setOutbounds(results);
             resolve(results);
         });
         task.start();
