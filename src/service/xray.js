@@ -1,7 +1,6 @@
 const path = require('path');
 const {spawnSync} = require('child_process');
 
-const subSvc = require('./sub');
 const XRay = require('../lib/xray');
 const curl = require('../lib/curl');
 const Task = require('../lib/task');
