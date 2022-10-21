@@ -12,7 +12,7 @@ function findXrayExec() {
 class Xray {
     exec = '';
     child = null;
-    startPort = 40080;
+    startPort = 10080;
     endPort = 0;
     name = '';
     configDir = '';
@@ -36,7 +36,7 @@ class Xray {
     constructor(
         {
             exec = '',
-            startPort = 40080,
+            startPort = 10080,
             configDir,
             logDir,
             name
