@@ -12,7 +12,7 @@ RUN sed -i "s@dl-cdn.alpinelinux.org/@repo.huaweicloud.com/@g" /etc/apk/reposito
     apk add nodejs npm curl && \
     xray help && \
     node -v && \
-    npm --verb i
+    npm --verb i --registry=https://registry.npmmirror.com
 
 # ENTRYPOINT [ "./docker-entrypoint.sh" ]
 
