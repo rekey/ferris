@@ -6,7 +6,7 @@ const {wait} = require('./lib/util');
     await appSvc.trigger();
     let canRun = true;
     while (canRun) {
-        await wait(1000 * 60 * 60);
+        await wait(1000 * 60 * 15);
         await appSvc.trigger();
     }
 })();
