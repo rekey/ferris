@@ -1,11 +1,11 @@
 const path = require('path');
-const {spawnSync} = require('child_process');
+const { spawnSync } = require('child_process');
 
 const XRay = require('../lib/xray');
 const curl = require('../lib/curl');
 const Task = require('../lib/task');
-const {wait} = require('../lib/util');
-const {store} = require('../lib/store');
+const { wait } = require('../lib/util');
+const { store } = require('../lib/store');
 
 const xrayKey = 'xray';
 const xrayDataKey = `${xrayKey}-data`;
@@ -36,14 +36,14 @@ async function testSocks(port) {
     };
     return Promise.race([
         curl(
-            'http://ip-api.com/json',
+            'https://api.ipify.org?format=json',
             `socks5://127.0.0.1:${port}`
         )
             .then((buf) => {
                 const data = JSON.parse(buf.toString('utf8'));
                 return {
                     success: true,
-                    ip: data.query,
+                    ip: data.ip,
                     time: Date.now() - now,
                 };
             })
@@ -83,9 +83,11 @@ async function test(originOutbounds) {
     cache.test.promise = new Promise((resolve) => {
         const results = [];
         let port = xray.startPort;
+        const end = xray.endPort;
+        const length = end - port;
+        let done = 0;
         const task = new Task(() => {
-            port += 1;
-            if (port >= xray.endPort) {
+            if (port >= end) {
                 return;
             }
             return async (i) => {
@@ -95,27 +97,36 @@ async function test(originOutbounds) {
                     success: false,
                     ip: '',
                 };
+                port += 1;
+                const index = data.port - xray.startPort;
+                const outbound = originOutbounds[index];
+                if (!outbound) {
+                    return;
+                }
                 try {
                     const test = await testSocks(port);
                     Object.assign(data, test);
+                    Object.assign(outbound.extend, data);
                 } catch (e) {
+                    console.log(index, outbound);
                     console.error(e);
                 }
-                const index = data.port - xray.startPort;
-                const outbound = originOutbounds[index];
-                Object.assign(outbound.extend, data);
-                console.log(i, outbound.extend.ps, outbound.extend.success, outbound.extend.time, outbound.extend.ip);
+                done += 1;
+                console.log(i, done, length, outbound.extend.ps, port, 'done', outbound.extend.success, outbound.extend.time, outbound.extend.ip);
                 if (data.success) {
                     results.push(outbound);
                 }
             };
-        }, 20);
-        task.on('done', () => {
+        }, 15);
+        task.once('done', () => {
             cache.test.running = false;
             cache.test.now = Date.now();
-            xray.stop();
+            process.nextTick(() => {
+                xray.stop();
+            });
             setOutbounds(results);
             resolve(results);
+            console.log('test', 'done');
         });
         task.start();
     });

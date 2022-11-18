@@ -1,4 +1,5 @@
 const Event = require('events');
+const wait = require('../util/wait')
 
 class Task extends Event {
     max = 1
@@ -24,13 +25,18 @@ class Task extends Event {
     }
 
     start() {
-        for (; this.current < this.max; this.current++) {
-            const i = this.current;
+        let i = this.current;
+        for (; i < this.max; i++) {
             (async (that, i) => {
+                console.log('thread', i, 'start');
                 await that.run(i);
                 that.done += 1;
-                if (that.done === (that.max - 1)) {
-                    that.emit('done');
+                console.log('thread', i, 'done');
+                await wait(100);
+                if (that.done === that.max) {
+                    process.nextTick(() => {
+                        that.emit('done');
+                    });
                 }
             })(this, i);
         }

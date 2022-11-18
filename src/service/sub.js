@@ -62,7 +62,7 @@ function delUrl(url = '') {
 
 async function subAll() {
     let urls = store.get(subUrlKey) || [];
-    await Promise.all(urls.map(async (url) => {
+    return Promise.all(urls.map(async (url) => {
         console.log('start', 'sub', url);
         try {
             await request(url);
@@ -70,6 +70,7 @@ async function subAll() {
             console.log(e.message);
         }
         console.log('done', 'sub', url);
+        return url;
     }));
 }
 
