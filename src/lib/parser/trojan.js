@@ -18,10 +18,10 @@ const outbound = {
     "settings": {
         "servers": [
             {
-                "address": "kr.oracle02.5288825.xyz",
+                "address": "",
                 "port": 443,
-                "password": "74e58866-ce29-4ccd-8fe7-dd29d17952e6",
-                "email": "admin@apple.com",
+                "password": "",
+                "email": "",
                 "level": 0
             }
         ]
@@ -31,7 +31,7 @@ const outbound = {
     },
 };
 
-function parse(line, src = "") {
+function parse(line) {
     const data = url.parse(line);
     const ps = decodeURIComponent(data.hash)?.slice(1);
     const query = new url.URLSearchParams(data.query);
@@ -45,12 +45,11 @@ function parse(line, src = "") {
     server.password = data.auth;
     server.address = data.hostname;
     server.port = data.port * 1;
-    config.tag = `${src}-trojan-${ps}-${data.hostname}-${data.port}`;
-    // console.log(JSON.stringify(config));
-
+    config.tag = utils.md5(line);
     config.extend = {
         ps: ps,
         rate: rateParse(ps),
+        type: 'trojan',
     };
     return config;
 }

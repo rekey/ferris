@@ -1,15 +1,16 @@
 const appSvc = require('./service/app');
 const app = require('./app');
-const {wait} = require('./lib/util');
+const { wait } = require('./lib/util');
 
-(async () => {
-    await appSvc.trigger();
-    let canRun = true;
-    while (canRun) {
-        await wait(1000 * 60 * 15);
-        await appSvc.trigger();
-    }
-})();
+process.nextTick(() => {
+    (async () => {
+        let canRun = true;
+        while (canRun) {
+            await appSvc.trigger();
+            await wait(1000 * 60 * 15);
+        }
+    })();
+});
 
 app.listen(60001);
 

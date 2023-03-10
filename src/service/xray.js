@@ -5,10 +5,7 @@ const XRay = require('../lib/xray');
 const curl = require('../lib/curl');
 const Task = require('../lib/task');
 const { wait } = require('../lib/util');
-const { store } = require('../lib/store');
-
-const xrayKey = 'xray';
-const xrayDataKey = `${xrayKey}-data`;
+const store = require('./store');
 
 function findXrayExec() {
     const spawn = spawnSync('which', ['xray'], {
@@ -55,11 +52,11 @@ async function testSocks(port) {
 }
 
 function setOutbounds(outbounds) {
-    store.set(xrayDataKey, outbounds);
+    store.set(store.xrayDataKey, outbounds);
 }
 
 function getOutbounds() {
-    return store.get(xrayDataKey);
+    return store.get(store.xrayDataKey, []);
 }
 
 const cache = {
@@ -78,52 +75,40 @@ async function test(originOutbounds) {
     if ((now - cache.test.now) < cache.test.expire) {
         return cache.test.promise;
     }
+    cache.test.now = now;
     cache.test.running = true;
     await xray.start(originOutbounds);
     cache.test.promise = new Promise((resolve) => {
         const results = [];
-        let port = xray.startPort;
-        const end = xray.endPort;
-        const length = end - port;
-        let done = 0;
-        const task = new Task(() => {
+        let port = xray.startPort - 1;
+        const end = xray.endPort + 1;
+        const task = new Task(15);
+        task.getTask = () => {
             if (port >= end) {
-                return;
+                return false;
             }
-            return async (i) => {
-                const data = {
-                    port,
-                    time: 0,
-                    success: false,
-                    ip: '',
-                };
-                port += 1;
-                const index = data.port - xray.startPort;
-                const outbound = originOutbounds[index];
-                if (!outbound) {
-                    return;
-                }
+            port += 1;
+            const runPort = port;
+            return async () => {
                 try {
-                    const test = await testSocks(port);
-                    Object.assign(data, test);
-                    Object.assign(outbound.extend, data);
+                    const test = await testSocks(runPort);
+                    if (test.success) {
+                        const outbound = xray.outbounds[runPort];
+                        Object.assign(outbound.extend, test);
+                        results.push(outbound);
+                        console.log(outbound.protocol, test.ip, test.success, test.time);
+                    }
                 } catch (e) {
-                    console.log(index, outbound);
-                    console.error(e);
-                }
-                done += 1;
-                console.log(i, done, length, outbound.extend.ps, port, 'done', outbound.extend.success, outbound.extend.time, outbound.extend.ip);
-                if (data.success) {
-                    results.push(outbound);
                 }
             };
-        }, 15);
+        };
         task.once('done', () => {
             cache.test.running = false;
             cache.test.now = Date.now();
             process.nextTick(() => {
                 xray.stop();
             });
+            // console.log(results);
             setOutbounds(results);
             resolve(results);
             console.log('test', 'done');

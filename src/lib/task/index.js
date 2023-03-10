@@ -4,12 +4,14 @@ const wait = require('../util/wait')
 class Task extends Event {
     max = 1
 
-    constructor(getTask, max = 1) {
+    constructor(max = 1) {
         super();
         this.current = 0;
         this.max = max;
         this.done = 0;
-        this.getTask = getTask;
+        this.getTask = () => {
+            return false;
+        };
     }
 
     async run(i) {

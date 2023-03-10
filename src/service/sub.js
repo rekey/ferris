@@ -1,48 +1,32 @@
-const {got} = require('got-cjs');
+const { got } = require('got-cjs');
 
-const {store} = require('../lib/store');
-const parser = require('../lib/parser');
-const {base64, md5} = require('../lib/util');
+const store = require('./store');
+const { base64, md5 } = require('../lib/util');
 
 const subKey = 'sub';
 const subDataKey = `${subKey}-data`;
 const subUrlKey = `${subKey}-url`;
 
 function save(url, data) {
-    const storeData = store.get(subDataKey) || {};
-    storeData[url] = {
-        data,
-        now: Date.now(),
-    };
+    const storeData = store.get(store.subDataKey, {});
+    storeData[url] = data;
     store.set(subDataKey, storeData);
 }
 
 async function request(url) {
     const resp = await got(url);
     const content = base64.decode(resp.body);
-    const md5str = md5(url).slice(0, 8);
-    const data = content
-        .split('\n')
-        .filter((line) => {
-            return line
-                && line.trim()
-                && (line.indexOf('vmess://') === 0 || line.indexOf('trojan://') === 0);
-        })
-        .map((line) => {
-            if (line.indexOf('vmess://') === 0) {
-                return parser.vmess.parse(line, md5str);
-            }
-            if (line.indexOf('trojan://') === 0) {
-                return parser.trojan.parse(line, md5str);
-            }
-            return {};
-        });
-    save(url, data);
-    return data;
+    save(url, content.split('\n').map((line) => {
+        return {
+            key: md5(line),
+            value: line,
+        };
+    }));
+    return content.split('\n');
 }
 
 function addUrl(url) {
-    const urls = store.get(subUrlKey) || [];
+    const urls = store.get(store.subUrlKey, []);
     if (!urls.includes(url)) {
         urls.push(url);
         store.set(subUrlKey, urls);
@@ -52,7 +36,7 @@ function addUrl(url) {
 
 function delUrl(url = '') {
     url = url.trim();
-    let urls = store.get(subUrlKey) || [];
+    let urls = store.get(store.subUrlKey, []);
     urls = urls.filter((item) => {
         return item !== url;
     });
@@ -61,8 +45,12 @@ function delUrl(url = '') {
 }
 
 async function subAll() {
-    let urls = store.get(subUrlKey) || [];
-    return Promise.all(urls.map(async (url) => {
+    let urls = getAllUrls();
+    for (let i = 0; i < urls.length; i++) {
+        const url = urls[i];
+        if (!url) {
+            break;
+        }
         console.log('start', 'sub', url);
         try {
             await request(url);
@@ -70,22 +58,23 @@ async function subAll() {
             console.log(e.message);
         }
         console.log('done', 'sub', url);
-        return url;
-    }));
+    }
+    return urls;
 }
 
 function getAllOutbounds() {
     let outbounds = [];
-    const storeData = store.get(subDataKey) || {};
-    Object.keys(storeData).forEach((url) => {
-        const item = storeData[url];
-        outbounds = outbounds.concat(item.data);
-    });
+    const storeData = store.get(store.subDataKey, {});
+    Object.keys(storeData)
+        .forEach((url) => {
+            const data = storeData[url];
+            outbounds = outbounds.concat(data);
+        });
     return outbounds;
 }
 
 function getAllUrls() {
-    return store.get(subUrlKey) || [];
+    return store.get(store.subUrlKey, []);
 }
 
 module.exports = {

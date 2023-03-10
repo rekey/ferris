@@ -1,6 +1,8 @@
-const {spawn, spawnSync} = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+
+const parser = require('../parser');
 
 function findXrayExec() {
     const spawn = spawnSync('which', ['xray'], {
@@ -59,45 +61,39 @@ class Xray {
         return path.resolve(this.configDir, `${this.name}.json`);
     }
 
-    buildInbound(type, port) {
-        return {
-            tag: `${type}-${port}`,
-            listen: "0.0.0.0",
-            protocol: type,
-            port: port,
-            settings: type === 'socks'
-                ? {
-                    "udp": true,
-                    "auth": "noauth"
-                }
-                : {},
-        }
-    }
-
-    buildConfig(outbounds, type) {
+    buildConfig(outbounds) {
         this.endPort = 0;
         const config = this.config;
         config.log.error = path.resolve(this.logDir, `log-${this.name}.error.log`);
         config.log.access = path.resolve(this.logDir, `log-${this.name}.access.log`);
         config.routing.rules = [];
-        config.outbounds = outbounds;
-        config.inbounds = outbounds.map((item, index) => {
+        config.outbounds = [];
+        config.inbounds = [];
+        outbounds.forEach((item, index) => {
             const port = this.startPort + index;
-            const inbound = this.buildInbound(type, port);
+            const outbound = parser.outbound(item.value);
+            if (!outbound) {
+                return;
+            }
+            const inbound = parser.inbound(outbound, port);
             config.routing.rules.push({
                 type: "field",
                 inboundTag: [inbound.tag],
-                outboundTag: item.tag,
+                outboundTag: outbound.tag,
             });
-            this.outbounds[port] = item;
+            config.inbounds.push(inbound);
+            config.outbounds.push(outbound);
+            this.outbounds[port] = outbound;
             this.endPort = port;
-            return inbound;
         });
-        fs.writeFileSync(this.buildConfigPath(), JSON.stringify(this.config, null, 4), 'utf8');
+        fs.writeFileSync(
+            this.buildConfigPath(),
+            JSON.stringify(this.config, null, 4),
+        );
     }
 
-    async start(outbounds, type = 'socks') {
-        this.buildConfig(outbounds, type);
+    async start(outbounds) {
+        this.buildConfig(outbounds);
         this.stop();
         const configFile = this.buildConfigPath();
         return new Promise((resolve) => {

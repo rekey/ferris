@@ -79,19 +79,19 @@ function streamSettings(data) {
     if (data.tls === 'tls') {
         config.security = 'tls';
         if (data.host) {
-            const {tlsSettings} = base;
+            const { tlsSettings } = base;
             tlsSettings.serverName = data.host;
             config.tlsSettings = tlsSettings;
         }
     }
     if (data.net === 'kcp') {
-        const {kcpSettings} = base;
+        const { kcpSettings } = base;
         kcpSettings.header.type = data.type;
         config.kcpSettings = kcpSettings;
         return config;
     }
     if (data.net === 'ws') {
-        const {wsSettings} = base;
+        const { wsSettings } = base;
         if (data.host) {
             wsSettings.headers.Host = data.host;
         }
@@ -102,7 +102,7 @@ function streamSettings(data) {
         return config;
     }
     if (data.net === 'h2') {
-        const {httpSettings} = base;
+        const { httpSettings } = base;
         if (data.host) {
             httpSettings.host = data.host.split(',');
         }
@@ -111,7 +111,7 @@ function streamSettings(data) {
         return config;
     }
     if (data.net === 'quic') {
-        const {quicSettings} = base;
+        const { quicSettings } = base;
         quicSettings.security = data.host;
         quicSettings.key = data.path;
         quicSettings.header.type = data.type;
@@ -119,7 +119,7 @@ function streamSettings(data) {
         return config;
     }
     if (data.net === 'tcp') {
-        const {tcpSettings} = base;
+        const { tcpSettings } = base;
         if (data.type === 'http') {
             tcpSettings.header.request.headers.Host = data.host;
             tcpSettings.header.request.path = [data.path];
@@ -144,10 +144,9 @@ function vnext(data) {
     }
 }
 
-function parse(line, src = "") {
+function parse(line) {
     line = line.replace('vmess://', '');
-    const buf = Buffer.from(line, 'base64');
-    const data = JSON.parse(buf.toString('utf8'));
+    const data = JSON.parse(utils.base64.decode(line));
     const ps = decodeURIComponent(data.ps);
     return {
         "mux": {
@@ -157,10 +156,11 @@ function parse(line, src = "") {
         },
         "protocol": "vmess",
         "streamSettings": streamSettings(data),
-        "tag": `${src}-vmess-${ps}-${data.add}-${data.port}`,
+        "tag": utils.md5(line),
         "extend": {
             ps: ps,
             rate: rateParse(ps),
+            type: 'vmess',
         },
         "settings": {
             "vnext": [

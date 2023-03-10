@@ -1,14 +1,16 @@
 const subSvc = require('./service/sub');
 const xraySvc = require('./service/xray');
 
-subSvc.addUrl('https://xxx.com');
+subSvc.addUrl('https://sub.cutecloud.link/link/Pn3uVBxGgWk9dgxR?sub=3');
 
 //(async () => {
 //    await subSvc.subAll();
 //})();
 
 (async () => {
-    const outbounds = subSvc.getAllOutbounds();
-    const data = await xraySvc.test(outbounds);
-    console.log(data);
+    console.log(subSvc.getAllUrls());
+    await subSvc.subAll();
+    // const outbounds = subSvc.getAllOutbounds();
+    // console.log(outbounds);
+    console.log(subSvc.getAllUrls());
 })();
