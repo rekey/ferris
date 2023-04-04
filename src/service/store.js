@@ -1,6 +1,7 @@
 const path = require('path');
 const mkdirp = require('mkdirp');
 const fs = require('fs');
+const { Console } = require('console');
 
 const dataDir = path.resolve(__dirname, '../store');
 const dataFile = path.resolve(dataDir, './data.json');
@@ -20,15 +21,11 @@ const store = {
         );
     },
     set(key, value) {
-        data[key] = JSON.stringify(value);
+        data[key] = value;
         this.save();
     },
     get(key, fallback) {
-        try {
-            return JSON.parse(data[key]);
-        } catch (e) {
-            return fallback;
-        }
+        return data[key] || fallback;
     }
 };
 

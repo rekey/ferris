@@ -78,26 +78,39 @@ async function test(originOutbounds) {
     cache.test.now = now;
     cache.test.running = true;
     await xray.start(originOutbounds);
+    let port = xray.startPort;
+    function getPort() {
+        if (port === xray.endPort) {
+            return 0;
+        }
+        const p = port * 1;
+        port += 1;
+        return p;
+    }
     cache.test.promise = new Promise((resolve) => {
         const results = [];
-        let port = xray.startPort - 1;
-        const end = xray.endPort + 1;
         const task = new Task(15);
+        const o = {};
         task.getTask = () => {
-            if (port >= end) {
+            const runPort = getPort();
+            console.log('runPort', runPort);
+            if (runPort === 0) {
                 return false;
             }
-            port += 1;
-            const runPort = port;
-            return async () => {
+            return async (index) => {
                 try {
+                    const outbound = xray.outbounds[runPort];
+                    console.log(index, outbound.protocol, outbound.tag, "start");
                     const test = await testSocks(runPort);
+                    if (o[test.ip]) {
+                        return;
+                    }
+                    o[test.ip] = true;
                     if (test.success) {
-                        const outbound = xray.outbounds[runPort];
                         Object.assign(outbound.extend, test);
                         results.push(outbound);
-                        console.log(outbound.protocol, test.ip, test.success, test.time);
                     }
+                    console.log(index, outbound.protocol, outbound.tag, test.ip, test.success, "done");
                 } catch (e) {
                 }
             };

@@ -1,12 +1,15 @@
+const vmess = require('./vmess.js');
+const trojan = require('./trojan');
+
 module.exports = {
-    vmess: require('./vmess.js'),
-    trojan: require('./trojan'),
+    vmess,
+    trojan,
     outbound(line) {
         if (line.indexOf('vmess://') === 0) {
-            return this.vmess.parse(line);
+            return vmess.parse(line);
         }
         if (line.indexOf('trojan://') === 0) {
-            return this.trojan.parse(line);
+            return trojan.parse(line);
         }
         return false;
     },

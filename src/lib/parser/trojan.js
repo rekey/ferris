@@ -45,7 +45,6 @@ function parse(line) {
     server.password = data.auth;
     server.address = data.hostname;
     server.port = data.port * 1;
-    config.tag = utils.md5(line);
     config.extend = {
         ps: ps,
         rate: rateParse(ps),

@@ -75,6 +75,7 @@ class Xray {
             if (!outbound) {
                 return;
             }
+            outbound.tag = item.tag;
             const inbound = parser.inbound(outbound, port);
             config.routing.rules.push({
                 type: "field",

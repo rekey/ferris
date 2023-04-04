@@ -12,8 +12,6 @@ process.nextTick(() => {
     })();
 });
 
-app.listen(60001);
-
 function handle(signal) {
     console.log('signal', signal);
     process.exit(0);
@@ -21,3 +19,6 @@ function handle(signal) {
 
 process.on('SIGINT', handle);
 process.on('SIGTERM', handle);
+
+console.log('app', 'listen', 60001);
+app.listen(60001);

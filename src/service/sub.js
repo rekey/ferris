@@ -7,26 +7,31 @@ const subKey = 'sub';
 const subDataKey = `${subKey}-data`;
 const subUrlKey = `${subKey}-url`;
 
-function save(url, data) {
-    const storeData = store.get(store.subDataKey, {});
+
+async function requestSub(url) {
+    const storeData = store.get(subDataKey, {});
+    const resp = await got(url, {
+        followRedirect: true,
+    });
+    const content = base64.decode(resp.body);
+    const data = {};
+    for (let line of content.split('\n')) {
+        line = line.trim();
+        if (line !== "") {
+            const tag = md5(line);
+            data[md5(line)] = {
+                tag,
+                value: line,
+            };
+        }
+    }
     storeData[url] = data;
     store.set(subDataKey, storeData);
 }
 
-async function request(url) {
-    const resp = await got(url);
-    const content = base64.decode(resp.body);
-    save(url, content.split('\n').map((line) => {
-        return {
-            key: md5(line),
-            value: line,
-        };
-    }));
-    return content.split('\n');
-}
-
 function addUrl(url) {
     const urls = store.get(store.subUrlKey, []);
+    console.log(urls);
     if (!urls.includes(url)) {
         urls.push(url);
         store.set(subUrlKey, urls);
@@ -53,7 +58,7 @@ async function subAll() {
         }
         console.log('start', 'sub', url);
         try {
-            await request(url);
+            await requestSub(url);
         } catch (e) {
             console.log(e.message);
         }
@@ -65,11 +70,12 @@ async function subAll() {
 function getAllOutbounds() {
     let outbounds = [];
     const storeData = store.get(store.subDataKey, {});
-    Object.keys(storeData)
-        .forEach((url) => {
-            const data = storeData[url];
-            outbounds = outbounds.concat(data);
-        });
+    for (const k of Object.keys(storeData)) {
+        const data = storeData[k];
+        for (const key of Object.keys(data)) {
+            outbounds.push(data[key]);
+        }
+    }
     return outbounds;
 }
 

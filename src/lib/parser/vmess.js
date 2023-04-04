@@ -156,7 +156,6 @@ function parse(line) {
         },
         "protocol": "vmess",
         "streamSettings": streamSettings(data),
-        "tag": utils.md5(line),
         "extend": {
             ps: ps,
             rate: rateParse(ps),
